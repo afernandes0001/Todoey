@@ -10,7 +10,7 @@ import UIKit
 
 class TodoListViewController: UITableViewController {
 
-    let itemArray = ["Find Mike","Buy Eggs","Destroy Demogorgon"]
+    var itemArray = ["Find Mike","Buy Eggs","Destroy Demogorgon"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,7 +26,7 @@ class TodoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-        // STEP 1.1
+        // STEP 1
         let cell = UITableViewCell(style: .default, reuseIdentifier: "ToDoItemCell")
         
         cell.textLabel?.text = itemArray[indexPath.row]
@@ -40,21 +40,47 @@ class TodoListViewController: UITableViewController {
     
     //MARK - Step 2 - Tableview Delegate Methods
    
-        //STEP 2.1
+        //STEP 2
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         print(itemArray[indexPath.row])
         
-        //STEP 2.2
+        //STEP 3
         if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
             tableView.cellForRow(at: indexPath)?.accessoryType = .none
         } else {
             tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
         }
         
-        //STEP 2.1
+        //STEP 2
         tableView.deselectRow(at: indexPath, animated: true)
     }
-    
+   
+    //MARK - Step 4 - Add New Items
 
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        
+        // STEP 8 - Create a VAR that be be used anywhere within the method
+        var textField = UITextField()
+        
+        // STEP 5
+        let alert = UIAlertController(title: "Add New Todoey Item", message: "Message bar", preferredStyle: .alert)
+        let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
+            //what will happen once the user clicks the Add Item button on our UIAlert
+            // STEP 10
+            self.itemArray.append(textField.text!)
+            self.tableView.reloadData()
+        }
+        
+        // STEP 7
+        alert.addTextField { (alertTextField) in
+            alertTextField.placeholder = "Create new item"
+        // STEP 9 - Use VAR from STEP 8
+            textField = alertTextField
+        }
+        
+        // STEP 6
+        alert.addAction(action)
+        present(alert, animated: true, completion: nil)
     }
+}
 
