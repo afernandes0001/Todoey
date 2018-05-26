@@ -12,9 +12,16 @@ class TodoListViewController: UITableViewController {
 
     var itemArray = ["Find Mike","Buy Eggs","Destroy Demogorgon"]
     
+    let defaults = UserDefaults.standard
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        
+        //STEP 12
+        of let items = itemArray = defaults.array(forKey: "TodoListArray") as? [String] {
+            itemArray = items
+        }
     }
 
     override func didReceiveMemoryWarning() {
@@ -68,6 +75,11 @@ class TodoListViewController: UITableViewController {
             //what will happen once the user clicks the Add Item button on our UIAlert
             // STEP 10
             self.itemArray.append(textField.text!)
+            
+            // STEP 11
+            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            
+            // STEP 10
             self.tableView.reloadData()
         }
         
