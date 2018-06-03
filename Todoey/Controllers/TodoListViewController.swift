@@ -14,27 +14,38 @@ class TodoListViewController: UITableViewController {
     
     // STEP 14
     var itemArray = [Item]()
+    // STEP 21 - Create
+    // STEP 24 - moved to Global var
     
-    let defaults = UserDefaults.standard
-    
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+
+    // STEP 22 - Remove UserDefaults as this is for very basic actions
+//        let defaults = UserDefaults.standard
+//
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
+        print(dataFilePath)
+
         //STEP 13
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        self.itemArray.append(newItem)
- 
-        let newItem2 = Item()
-        newItem2.title = "Find Andre"
-        self.itemArray.append(newItem2)
+        // STEP 29 - Removed
+//        let newItem = Item()
+//        newItem.title = "Find Mike"
+//        self.itemArray.append(newItem)
+// 
+//        let newItem2 = Item()
+//        newItem2.title = "Find Andre"
+//        self.itemArray.append(newItem2)
 
         
-        //STEP 12
-//        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
+        //STEP 12 - Create
+        // STEP 25 - Removed this session
+//        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
 //            itemArray = items
 //        }
+        // STEP 28
+        loadItems()
     }
 
     override func didReceiveMemoryWarning() {
@@ -81,6 +92,7 @@ class TodoListViewController: UITableViewController {
         
         // STEP 18
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        saveItems()
 
         // STEP 16
 //        if itemArray[indexPath.row].done == false {
@@ -90,7 +102,8 @@ class TodoListViewController: UITableViewController {
 //        }
         
         // STEP 17
-        tableView.reloadData()
+        // STEP 26 - Remove line below
+//        tableView.reloadData()
         
         //STEP 3
         // STEP 17 - commented STEP 3
@@ -127,10 +140,12 @@ class TodoListViewController: UITableViewController {
             self.itemArray.append(newItem)
             
             // STEP 11
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            // STEP 23 - Remove & add func saveItems
+//            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            self.saveItems()
             
-            // STEP 10
-            self.tableView.reloadData()
+            // STEP 10 - Creation (check step 27)
+//            self.tableView.reloadData()
         }
         
         // STEP 7
@@ -144,5 +159,32 @@ class TodoListViewController: UITableViewController {
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
     }
+
+// MARK - Model Manipulation Methods - STEP 27
+
+func saveItems() {
+    let encoder = PropertyListEncoder()
+    
+    do {
+        let data = try encoder.encode(itemArray)
+        try data.write(to: dataFilePath!)
+    } catch {
+        print("Error enconding Array, \(error)")
+    }
+    tableView.reloadData()
+
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decoding item array, \(error)")
+            }
+        }
+    }
+    
 }
 
