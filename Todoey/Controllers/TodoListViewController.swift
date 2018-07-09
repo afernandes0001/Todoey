@@ -7,6 +7,8 @@
 //
 
 import UIKit
+//STEP 34 - Import CoreData
+import CoreData
 
 class TodoListViewController: UITableViewController {
 
@@ -17,7 +19,18 @@ class TodoListViewController: UITableViewController {
     // STEP 21 - Create
     // STEP 24 - moved to Global var
     
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    //STEP 35 - Commented line below
+//    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+
+    // STEP 43 - Var for the selected Category
+    var selectedCategory : Category? {
+        didSet {
+            loadItems()
+        }
+    }
+    
+    //STEP 32 - Move to Global session
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
     // STEP 22 - Remove UserDefaults as this is for very basic actions
 //        let defaults = UserDefaults.standard
@@ -26,7 +39,10 @@ class TodoListViewController: UITableViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        print(dataFilePath)
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+        
+        //step 39 - Searchbar
+//        searchBar.delegate = self
 
         //STEP 13
         // STEP 29 - Removed
@@ -44,8 +60,8 @@ class TodoListViewController: UITableViewController {
 //        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
 //            itemArray = items
 //        }
-        // STEP 28
-        loadItems()
+        // STEP 28 - STEP44 - moved loadItem to step 43
+//        loadItems()
     }
 
     override func didReceiveMemoryWarning() {
@@ -53,6 +69,7 @@ class TodoListViewController: UITableViewController {
         // Dispose of any resources that can be recreated.
     }
 
+    //MARK - STEP 30 - remove Item.swift
     //MARK - Step 1 - Tableview Datasource Methods
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -88,7 +105,15 @@ class TodoListViewController: UITableViewController {
    
         //STEP 2
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print(itemArray[indexPath.row])
+//        print(itemArray[indexPath.row])
+        
+
+        //STEP 37 - Updating information
+//        itemArray[indexPath.row].setValue("Completed", forKey: "title")
+        
+        //STEP 38 - If I wanted to remove an item - First I need to remove from the Context and then delete it
+//         context.delete(itemArray[indexPath.row])
+//         itemArray.remove(at: indexPath.row)
         
         // STEP 18
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
@@ -129,9 +154,18 @@ class TodoListViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             //what will happen once the user clicks the Add Item button on our UIAlert
 
-            // STEP 15
-            let newItem = Item()
+            // STEP 15 - STEP 31 - Changed to CoreData - As context is needed more than once, it was move to global variable
+//            let newItem = Item()
+//            let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+  
+            let newItem = Item(context: self.context)
+            
             newItem.title = textField.text!
+            //STEP 34 - Setting done to false
+            newItem.done = false
+            
+            // STEP 45 - Added parent Category
+            newItem.parentCategory = self.selectedCategory
             
             // STEP 10
 //            self.itemArray.append(textField.text!)
@@ -166,25 +200,99 @@ func saveItems() {
     let encoder = PropertyListEncoder()
     
     do {
-        let data = try encoder.encode(itemArray)
-        try data.write(to: dataFilePath!)
+        //STEP 33 - Saving Context
+        try context.save()
+        
+        //STEP 31 - remove code below
+//        let data = try encoder.encode(itemArray)
+//        try data.write(to: dataFilePath!)
     } catch {
-        print("Error enconding Array, \(error)")
+//        print("Error enconding Array, \(error)")
+        print("Error saving context \(error)")
     }
     tableView.reloadData()
 
     }
     
-    func loadItems() {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            } catch {
-                print("Error decoding item array, \(error)")
-            }
-        }
-    }
+//    func loadItems() {
+//        if let data = try? Data(contentsOf: dataFilePath!) {
+//            let decoder = PropertyListDecoder()
+//            do {
+//                itemArray = try decoder.decode([Item].self, from: data)
+//            } catch {
+//                print("Error decoding item array, \(error)")
+//            }
+//        }
+//    }
+//
+    // STEP 36 - Implemented "Read" the database
     
+//    func loadItems() {
+    
+    //STEP 39 - Take a parameter
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
+
+        // STEP 46 - Filter per Category
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+      
+        // STEP 48 - Added Compound Predicate
+        if let additionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+        } else {
+            request.predicate = categoryPredicate
+        }
+        
+        //        let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, predicate])
+//
+//        request.predicate = compoundPredicate
+        
+        //STEP 40 - Line below is no longer needed as it is informed as a parameter
+        //        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        do {
+            itemArray = try context.fetch(request)
+        } catch {
+            print("Error fetching data from context \(error)")
+        }
+        tableView.reloadData()
+    }
+}
+
+// step 38 - Added seachbar
+//MARK: Searchbar methods
+
+extension TodoListViewController: UISearchBarDelegate {
+
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+//        do {
+//            itemArray = try context.fetch(request)
+//        } catch {
+//            print("Error fetching data from context \(error)")
+//        }
+        //        tableView.reloadData()
+
+        // STEP 47 - added predicate as parameter
+        loadItems(with: request, predicate: predicate)
+        
+    }
+ 
+    //STEP 41 - Loadl all items
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+       
+            loadItems()
+            
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+
+            }
+  
+        }
+  
+    }
 }
 
